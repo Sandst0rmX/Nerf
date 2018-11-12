@@ -33,24 +33,54 @@ bool hasFired = false;
 void fireBurst(int burst){
   for(int i = 0; i < burst; i++){
     digitalWrite(SOLENOID, HIGH);//Extends solenoid for 35 milliseconds to fire dart
-    delay(35);
+    delay(32);//38 for 2s solenoiding,32 for 3s solenoiding
     digitalWrite(SOLENOID, LOW);//Retracts Solenoid for 75 milliseconds to let the next dart emerge from the magazine
     delay(75);
   }
 }
 
+int triggerVals[] = {0,0,0,0,0};
+
+void updateTriggerVals(int val){
+  for(int i = 0; i < 4; i++){
+    triggerVals[i] = triggerVals[i+1];
+  }
+  triggerVals[4] = val;
+}
+
+int meanTriggerVal(){
+  int total = 0;
+  for(int i = 0; i < 5; i++){
+    total += triggerVals[i];
+  }
+  return total/5;
+}
+
 void loop() {
-  if(digitalRead(REVSWITCH)){ //Checks to see if the rev trigger is held
+  
+  if(digitalRead(REVSWITCH)){ //Checks to see if the rev trigger is held 
     digitalWrite(FLYWHEELS, HIGH);//If the rev trigger is held activate the flywheels
     
-    bool triggerState = analogRead(TRIGGER) > 1000; //Checks whether the trigger has been pulled or not and assigns this to a boolean
+    updateTriggerVals(analogRead(TRIGGER));
+    bool triggerState = meanTriggerVal() > 950; //Checks whether the trigger has been pulled or not and assigns this to a boolean
+    
+    Serial.println(triggerState);
     if(fireMode == 0){//Checks if the blaster is currently in semi auto mode
       if(triggerState && !hasFired){//Checks if the trigger is currently pressed and the blaster has not been fired for this trigger pull
+        /*Serial.print("fired ");
+        Serial.print(analogRead(TRIGGER));
+        Serial.print(" hasFired ");
+        Serial.println(hasFired);
+        Serial.println();*/
         fireBurst(1);//Fires a burst of 1 dart (a single shot)
         hasFired = true;//Sets the hasFired flag to true so the blaster fires only once
+
       }
       if(!triggerState){//Checks if the trigger is released 
+        /*Serial.print("reset");
+        Serial.println(analogRead(TRIGGER));*/
         hasFired = false;//Resets hasFired to false to the blaster can fire again
+
       }
     }
     if(fireMode == 1){//Checks if the blaster is currently in three shot burst mode
@@ -81,7 +111,7 @@ void loop() {
     fireMode = fireMode%3;
     
     hasCycled = true;//Sets the hasCycled flag to true so the blaster will only cycle once for this activation of the touch sensor.
-    Serial.println(fireMode);//Print the fireMode to the serial monitor
+    //Serial.println(fireMode);//Print the fireMode to the serial monitor
   }
   else if(analogRead(A2)< 300){//Checks if the touch sensor is not being pressed
     hasCycled = false;//Sets the hasCycled flag to false to allow the blaster to cycle the fireMode again.
