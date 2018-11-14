@@ -39,7 +39,7 @@ void fireBurst(int burst){
   }
 }
 
-int triggerVals[] = {0,0,0,0,0};
+float triggerVals[] = {0,0,0,0,0};
 
 void updateTriggerVals(int val){
   for(int i = 0; i < 4; i++){
@@ -80,7 +80,6 @@ void loop() {
         /*Serial.print("reset");
         Serial.println(analogRead(TRIGGER));*/
         hasFired = false;//Resets hasFired to false to the blaster can fire again
-
       }
     }
     if(fireMode == 1){//Checks if the blaster is currently in three shot burst mode
