@@ -5,7 +5,7 @@
 //Defines pins for microswitches behind rev trigger and main trigger
 #define REVSWITCH A4
 #define TRIGGER A5
-
+   
 //Defines pin for touch sensor that controls fire mode
 #define CYCLEMODE A2
 
@@ -57,14 +57,15 @@ int meanTriggerVal(){
 }
 
 void loop() {
-  
-  if(digitalRead(REVSWITCH)){ //Checks to see if the rev trigger is held 
+  bool revState = digitalRead(REVSWITCH);
+  Serial.println(revState);
+  if(revState){ //Checks to see if the rev trigger is held 
     digitalWrite(FLYWHEELS, HIGH);//If the rev trigger is held activate the flywheels
     
     updateTriggerVals(analogRead(TRIGGER));
     bool triggerState = meanTriggerVal() > 950; //Checks whether the trigger has been pulled or not and assigns this to a boolean
     
-    Serial.println(triggerState);
+    //Serial.println(triggerState);
     if(fireMode == 0){//Checks if the blaster is currently in semi auto mode
       if(triggerState && !hasFired){//Checks if the trigger is currently pressed and the blaster has not been fired for this trigger pull
         /*Serial.print("fired ");
