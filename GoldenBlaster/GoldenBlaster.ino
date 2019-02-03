@@ -1,34 +1,46 @@
+#include <Servo.h> 
+#include <FastLED.h>
+
 #define revSwitchPin 8
 #define trigSwitchPin A0
-#define cyclerPin 12
+#define cyclerPin 11
 
 #define flywheelsPin 6
 #define solenoidPin 3
 #define fanPin 9
 
-#include <Servo.h> 
+#define LED_PIN 12
+#define NUM_LEDS 4
+
+CRGB leds[NUM_LEDS];
 
 Servo fan;  // create servo object to control the fan
  
 void setup() 
 { 
-  Serial.begin(115200);
-  fan.attach(fanPin);
-  delay(2000);
-  Serial.println("attached");
-  fan.write(770); 
-  delay(3000);
-  Serial.println("FanInitComplete");
-  
   pinMode(revSwitchPin, INPUT_PULLUP);
   pinMode(trigSwitchPin, INPUT_PULLUP);
   pinMode(flywheelsPin, OUTPUT);
   pinMode(cyclerPin,INPUT);
+
+  digitalWrite(flywheelsPin, LOW);
+
+  FastLED.addLeds<WS2812, LED_PIN, GRB>(leds, NUM_LEDS);
+  
+  Serial.begin(115200);
+  fan.attach(fanPin);
+  delay(1000);
+  Serial.println("attached");
+  fan.write(770); 
+  delay(1000);
+  Serial.println("FanInitComplete");
+  
+
 } 
 
 int fireMode = 0; //semi auto, 1-3 burst, full auto
 
-const int numModes = 3;
+const int numModes = 2;
 
 //Boolean used to make sure that fireMode only changes once every time the touch sensor is pressed
 bool hasCycled = false;
@@ -41,6 +53,7 @@ void fire(int burstLength){
   digitalWrite(solenoidPin, HIGH);
   delay(burstLength);
   digitalWrite(solenoidPin,LOW);
+  Serial.println("fired");
 }
 
 float triggerVals[] = {0,0,0,0,0};
@@ -62,10 +75,10 @@ int meanTriggerVal(){
 
 void loop() 
 {
-    bool revving = !digitalRead(revSwitchPin);
-    updateTriggerVals(analogRead(trigSwitchPin));
-    bool triggerState = meanTriggerVal() < 50; //Checks whether the trigger has been pulled or not and assigns this to a boolean
-   
+   bool revving = !digitalRead(revSwitchPin);
+   updateTriggerVals(analogRead(trigSwitchPin));
+   bool triggerState = meanTriggerVal() < 50; //Checks whether the trigger has been pulled or not and assigns this to a boolean
+   //Serial.println(revving);
    if(revving){//If rev trigger is held...
        fan.write(2100);//activate ducted fan
        digitalWrite(flywheelsPin,HIGH);//Spin up the flywheels by activating the MOSFETs. Two MOSFETs on the same pin
@@ -78,7 +91,7 @@ void loop()
                 hasFired = false;//Resets hasFired to false to the blaster can fire again
             }
         }
-        if(fireMode == 1){//If the fireMode is 3-burst...
+        /*if(fireMode == 1){//If the fireMode is 3-burst...
             if(triggerState && !hasFired){// and the trigger is held and you haven't fired before on this trigger pull...
                 fire(120);//Fire a burst of 3 rounds
                 hasFired = true;//Set the hasFired flag to true
@@ -86,10 +99,11 @@ void loop()
             if(!triggerState){//Checks if the trigger is released 
                 hasFired = false;//Resets hasFired to false to the blaster can fire again
             }
-        }
-        if(fireMode == 2){//If the fireMode is full auto...
+        }*/
+        if(fireMode == 1){//If the fireMode is full auto...
             if(triggerState){//and the trigger is held...
                digitalWrite(solenoidPin, HIGH);//lower the solenoid gate.
+               Serial.println("firing");
             }
             else{//if the trigger is not held...
               digitalWrite(solenoidPin, LOW);//raise the solenoid gate.
@@ -105,7 +119,15 @@ void loop()
         //Cycles the fireMode between 0,1, and 2 in increments of 1
         fireMode += 1;
         fireMode = fireMode%numModes;
-  
+
+        for(int i = 0; i < NUM_LEDS; i++){
+          leds[i] = CRGB(0, 0, 0);
+        }
+        for(int i = 0; i < (fireMode+1)*2; i++){
+          leds[i] = CRGB(0, 100, 0);
+        }
+        FastLED.show();
+        
         hasCycled = true;//Sets the hasCycled flag to true so the blaster will only cycle once for this activation of the touch sensor.
         Serial.println(fireMode);//Print the fireMode to the serial monitor
     }

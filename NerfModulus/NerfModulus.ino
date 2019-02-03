@@ -1,3 +1,5 @@
+#include <FastLED.h>
+
 //Defines pins for Solenoid and Flywheel MOSFETs 
 #define SOLENOID A0
 #define FLYWHEELS A3
@@ -9,6 +11,11 @@
 //Defines pin for touch sensor that controls fire mode
 #define CYCLEMODE A2
 
+#define LED_PIN 6
+#define NUM_LEDS 3
+
+CRGB leds[NUM_LEDS];
+
 int fireMode = 0;
 // 0: semiAuto, 1:3Burst, 2:Auto
 
@@ -18,6 +25,7 @@ void setup() {
   pinMode(REVSWITCH, INPUT_PULLUP);
   pinMode(TRIGGER, INPUT_PULLUP);
   digitalWrite(FLYWHEELS, LOW);//Start flywheel MOSFET at LOW so the pin value isn't floating
+  FastLED.addLeds<WS2812, LED_PIN, GRB>(leds, NUM_LEDS);
   Serial.begin(115200);
 
 }
@@ -58,7 +66,7 @@ int meanTriggerVal(){
 
 void loop() {
   bool revState = digitalRead(REVSWITCH);
-  Serial.println(revState);
+  //Serial.println(revState);
   if(revState){ //Checks to see if the rev trigger is held 
     digitalWrite(FLYWHEELS, HIGH);//If the rev trigger is held activate the flywheels
     
@@ -109,9 +117,18 @@ void loop() {
     //Cycles the fireMode between 0,1, and 2 in increments of 1
     fireMode += 1;
     fireMode = fireMode%3;
+
+    for(int i = 0; i < 3; i++){
+      leds[i] = CRGB(0, 0, 0);
+    }
+    for(int i = 0; i < fireMode+1; i++){
+      leds[i] = CRGB(0, 100, 0);
+    }
+    FastLED.show();
+    
     
     hasCycled = true;//Sets the hasCycled flag to true so the blaster will only cycle once for this activation of the touch sensor.
-    //Serial.println(fireMode);//Print the fireMode to the serial monitor
+    Serial.println(fireMode);//Print the fireMode to the serial monitor
   }
   else if(analogRead(A2)< 300){//Checks if the touch sensor is not being pressed
     hasCycled = false;//Sets the hasCycled flag to false to allow the blaster to cycle the fireMode again.
